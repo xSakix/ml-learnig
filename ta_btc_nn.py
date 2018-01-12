@@ -55,7 +55,7 @@ train_data = []
 rank = data.rank()
 
 for i in data.index:
-    if i == 0 or i == 1:
+    if i == 0:
         continue
     price_before = data.iloc[i-1]['BTC-USD']
     price = data.iloc[i]['BTC-USD']
@@ -81,9 +81,10 @@ print(labels)
 print(train_data)
 
 # print(len(train_data))
-data_set = train_data
+data_set = train_data[:-1]
 # labels = labels[1:]
 print(len(data_set))
+print(len(labels))
 
 
 train_data = np.array(data_set[:int(len(data_set)/3)])
@@ -98,6 +99,8 @@ print(np.shape(train_data))
 
 model = Sequential()
 model.add(Dense(21, activation='sigmoid',input_dim = 10))
+model.add(Dense(43, activation='sigmoid'))
+model.add(Dense(87, activation='sigmoid'))
 model.add(Dense(1, activation='sigmoid'))
 
 model.summary()
