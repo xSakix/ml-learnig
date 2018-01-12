@@ -42,7 +42,7 @@ data.drop(indexes, inplace=True)
 
 # '1' - up, '0' - down
 labels = data.pct_change()
-labels = labels.iloc[1:]
+labels = labels.iloc[2:]
 labels[labels > 0.] = 1
 labels[labels < 0.] = 0
 labels = np.array(labels['BTC-USD'])
@@ -55,10 +55,12 @@ train_data = []
 rank = data.rank()
 
 for i in data.index:
-    if i == 0:
+    if i == 0 or i == 1:
         continue
+    price_before = data.iloc[i-1]['BTC-USD']
     price = data.iloc[i]['BTC-USD']
     day_data = []
+    day_data.append(price_before)
     day_data.append(price)
     day_data.append(price/data.iloc[:i]['BTC-USD'].sum())
     day_data.append(rank.iloc[i]['BTC-USD'])
@@ -78,7 +80,9 @@ for i in data.index:
 print(labels)
 print(train_data)
 
+# print(len(train_data))
 data_set = train_data
+# labels = labels[1:]
 print(len(data_set))
 
 
@@ -93,7 +97,7 @@ test_labels = np.array(labels[2*int(len(labels)/3):])
 print(np.shape(train_data))
 
 model = Sequential()
-model.add(Dense(19, activation='sigmoid',input_dim = 9))
+model.add(Dense(21, activation='sigmoid',input_dim = 10))
 model.add(Dense(1, activation='sigmoid'))
 
 model.summary()
