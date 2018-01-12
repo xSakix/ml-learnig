@@ -6,9 +6,9 @@ import numpy as np
 
 import keras
 from keras.models import Sequential
-from keras.layers import Dense
+from keras.layers import Dense,LSTM, Dropout,Embedding
 from keras.optimizers import SGD
-from keras import losses
+from keras import losses,optimizers
 
 file = 'open_data.csv'
 
@@ -98,15 +98,23 @@ test_labels = np.array(labels[2*int(len(labels)/3):])
 print(np.shape(train_data))
 
 model = Sequential()
-model.add(Dense(21, activation='sigmoid',input_dim = 10))
-model.add(Dense(43, activation='sigmoid'))
-model.add(Dense(87, activation='sigmoid'))
+model.add(Dense(21, activation='relu',input_dim = 10))
+model.add(Dropout(0.2))
+model.add(Dense(43, activation='relu'))
+model.add(Dropout(0.2))
+model.add(Dense(87, activation='relu'))
+model.add(Dropout(0.2))
+#model.add(Embedding(21,output_dim=125))
+#model.add(LSTM(21,input_shape=(125,10,1)))
 model.add(Dense(1, activation='sigmoid'))
 
 model.summary()
 
-model.compile(loss=losses.mse,
-              optimizer=SGD(),
+# model.compile(loss=losses.mse,
+#               optimizer=SGD(),
+#               metrics=['accuracy'])
+model.compile(loss=losses.binary_crossentropy,
+              optimizer=optimizers.rmsprop,
               metrics=['accuracy'])
 
 history = model.fit(train_data,train_labels,
