@@ -4,129 +4,204 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
-import keras
 from keras.models import Sequential
-from keras.layers import Dense,LSTM, Dropout,Embedding
-from keras.optimizers import SGD
-from keras import losses,optimizers
-
-file = 'open_data.csv'
-
-if os.path.isfile(file):
-    data = pandas.read_csv(file)
-else:
-    data = data_reader.DataReader(['BTC-USD'], 'yahoo', '2017-01-01', '2018-01-11')
-    data.ix['Open'].to_csv(file)
-    data = pandas.read_csv(file)
-
-if data['Date'][0] > data['Date'][len(data['Date']) - 1]:
-    rows = []
-    rows2 = []
-    for i in reversed(data.index):
-        row = [data[key][i] for key in data.keys()]
-        rows.append(row)
-
-    data = pandas.DataFrame(rows, columns=data.keys())
-del data['Date']
-indexes = []
-for key in data.keys():
-    for i in data[key].index:
-        val = data[key][i]
-        try:
-            if np.isnan(val) and not indexes.__contains__(i):
-                indexes.append(i)
-        except TypeError:
-            if not indexes.__contains__(i):
-                indexes.append(i)
-data.drop(indexes, inplace=True)
-
-# '1' - up, '0' - down
-labels = data.pct_change()
-labels = labels.iloc[2:]
-labels[labels > 0.] = 1
-labels[labels < 0.] = 0
-labels = np.array(labels['BTC-USD'])
+from keras.layers import Dense, Dropout
+from keras import losses
 
 
-#prepare data
-# price, avg price, rank,  mean,median, std, quantile(0.9),skew, kurt
-train_data = []
-#rol = data.cumsum().rolling(window=30).sum()
-rank = data.rank()
+def relu_net(input_dim=10):
+    model = Sequential()
+    L1 = layer_size(input_dim)
+    model.add(Dense(L1, activation='relu', input_dim=input_dim))
+    model.add(Dropout(0.5))
+    L2 = layer_size(L1)
+    model.add(Dense(L2, activation='relu'))
+    model.add(Dropout(0.5))
+    L3 = layer_size(L2)
+    model.add(Dense(L3, activation='relu'))
+    model.add(Dropout(0.5))
+    L4 = layer_size(L3)
+    model.add(Dense(L4, activation='relu'))
+    model.add(Dropout(0.5))
+    L5 = layer_size(L4)
+    model.add(Dense(L5, activation='relu'))
+    model.add(Dropout(0.5))
+    L6 = layer_size(L5)
+    model.add(Dense(L6, activation='relu'))
+    model.add(Dropout(0.5))
+    L7 = layer_size(L6)
+    model.add(Dense(L7, activation='relu'))
+    model.add(Dropout(0.5))
+    L8 = layer_size(L7)
+    model.add(Dense(L8, activation='relu'))
+    model.add(Dropout(0.5))
+    L9 = layer_size(L8)
+    model.add(Dense(L9, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(1, activation='sigmoid'))
+    return model
 
-for i in data.index:
-    if i == 0:
-        continue
-    price_before = data.iloc[i-1]['BTC-USD']
-    price = data.iloc[i]['BTC-USD']
-    day_data = []
-    day_data.append(price_before)
-    day_data.append(price)
-    day_data.append(price/data.iloc[:i]['BTC-USD'].sum())
-    day_data.append(rank.iloc[i]['BTC-USD'])
-    #day_data.append(rol.iloc[i]['BTC-USD'])
-    day_data.append(data.iloc[:i].mean()['BTC-USD'])
-    day_data.append(data.iloc[:i].median()['BTC-USD'])
-    day_data.append(data.iloc[:i].std()['BTC-USD'])
-    day_data.append(data.iloc[:i].quantile(0.9)['BTC-USD'])
-    day_data.append(data.iloc[:i].skew()['BTC-USD'])
-    day_data.append(data.iloc[:i].kurt()['BTC-USD'])
-    #print(day_data)
-    day = np.array(day_data)
-    day[np.isnan(day)] = 0.
-    train_data.append(day)
 
-# zip with labels into one list
-print(labels)
-print(train_data)
+def layer_size(input_dim):
+    return input_dim * 2 + 1
 
-# print(len(train_data))
+
+def sigmoid_net(input_dim=10):
+    model = Sequential()
+    model.add(Dense(layer_size(input_dim), activation='sigmoid', input_dim=input_dim))
+    model.add(Dropout(0.5))
+    model.add(Dense(1, activation='sigmoid'))
+    return model
+
+
+def tanh_net(input_dim=10):
+    model = Sequential()
+    L1 = layer_size(input_dim)
+    model.add(Dense(L1, activation='tanh', input_dim=input_dim))
+    model.add(Dropout(0.5))
+    # L2 = layer_size(L1)
+    # model.add(Dense(L2, activation='tanh', input_dim=input_dim))
+    # model.add(Dropout(0.5))
+    # L3 = layer_size(L2)
+    # model.add(Dense(L3, activation='tanh', input_dim=input_dim))
+    # model.add(Dropout(0.5))
+    # L4 = layer_size(L3)
+    # model.add(Dense(L4, activation='tanh', input_dim=input_dim))
+    # model.add(Dropout(0.5))
+    model.add(Dense(1, activation='tanh'))
+    return model
+
+
+def load_data():
+    file = 'open_data.csv'
+    if os.path.isfile(file):
+        data = pandas.read_csv(file)
+    else:
+        data = data_reader.DataReader(['BTC-USD'], 'yahoo', '2010-01-01', '2018-01-11')
+        data.ix['Open'].to_csv(file)
+        data = pandas.read_csv(file)
+    if data['Date'][0] > data['Date'][len(data['Date']) - 1]:
+        rows = []
+        for i in reversed(data.index):
+            row = [data[key][i] for key in data.keys()]
+            rows.append(row)
+
+        data = pandas.DataFrame(rows, columns=data.keys())
+    del data['Date']
+    indexes = []
+    for key in data.keys():
+        for i in data[key].index:
+            val = data[key][i]
+            try:
+                if np.isnan(val) and not indexes.__contains__(i):
+                    indexes.append(i)
+            except TypeError:
+                if not indexes.__contains__(i):
+                    indexes.append(i)
+    data.drop(indexes, inplace=True)
+    return data
+
+
+def create_labels():
+    # '1' - up, '0' - down
+    labels = data.pct_change()
+    labels = labels.iloc[2:]
+    labels[labels > 0.] = 1
+    labels[labels < 0.] = 0
+    labels = np.array(labels['BTC-USD'])
+    return labels
+
+
+def prepare_data_set(data):
+    # prepare data
+    # source : https://www.safaribooksonline.com/library/view/python-for-finance/9781491945360/ch01.html
+    log_returns = np.log(data['BTC-USD'] / data['BTC-USD'].shift(1))
+    #log_returns = data['BTC-USD']
+    sma = pandas.rolling_mean(log_returns, window=30)*np.sqrt(30)
+    median = pandas.rolling_median(log_returns, window=30)*np.sqrt(30)
+    std = pandas.rolling_std(log_returns, window=30)*np.sqrt(30)
+
+    # source https://www.quantinsti.com/blog/build-technical-indicators-in-python/
+    cci = (log_returns - pandas.rolling_mean(log_returns, 30)*np.sqrt(30)) / (0.015 * pandas.rolling_std(log_returns, 30)*np.sqrt(30))
+    ewma = pandas.ewma(log_returns, span=30)*np.sqrt(30)
+    roc = log_returns.diff(30)/ log_returns.shift(30)
+    upperbb = sma+(2*std)
+    lowerbb = sma-(2*std)
+
+    f, p = plt.subplots(3, 3)
+    p[0, 0].plot(log_returns)
+    p[0, 0].set_title('log returns')
+    # p[0, 0].set_title('btc data')
+    p[0, 1].plot(sma)
+    p[0, 1].set_title('sma')
+    p[0, 2].plot(median)
+    p[0, 2].set_title('median')
+    p[1, 0].plot(std)
+    p[1, 0].set_title('std')
+    p[1, 1].plot(cci)
+    p[1, 1].set_title('cci')
+    p[1, 2].plot(ewma)
+    p[1, 2].set_title('ewma')
+    p[2, 0].plot(roc)
+    p[2, 0].set_title('roc')
+    p[2, 1].plot(upperbb)
+    p[2, 1].plot(lowerbb)
+    p[2, 1].set_title('upperbb and lowerbb')
+    plt.show()
+
+    train_data = []
+    for i in data.index:
+        if i == 0:
+            continue
+        day_data = [
+            log_returns[i],
+            sma[i],
+            median[i],
+            std[i],
+            cci[i]
+        ]
+        day = np.array(day_data)
+        day[np.isnan(day)] = 0.
+        train_data.append(day)
+    return np.array(train_data)
+
+
+def load_data_from_data_set(data_set, labels, size):
+    indexes = np.random.choice(range(len(data_set)), size=size)
+
+    return data_set[indexes], labels[indexes]
+
+
+data = load_data()
+labels = create_labels()
+train_data = prepare_data_set(data)
 data_set = train_data[:-1]
-# labels = labels[1:]
-print(len(data_set))
-print(len(labels))
+train_data, train_labels = load_data_from_data_set(data_set, labels, int(2*len(data) / 3))
+val_data, val_labels = load_data_from_data_set(data_set, labels, int(len(data) / 3))
+test_data, test_labels = load_data_from_data_set(data_set, labels, int(len(data) / 3))
 
-
-train_data = np.array(data_set[:int(len(data_set)/3)])
-val_data = np.array(data_set[int(len(data_set)/3):2*int(len(data_set)/3)])
-test_data = np.array(data_set[2*int(len(data_set)/3):])
-
-train_labels = np.array(labels[:int(len(labels)/3)])
-val_labels = np.array(labels[int(len(labels)/3):2*int(len(labels)/3)])
-test_labels = np.array(labels[2*int(len(labels)/3):])
-
-print(np.shape(train_data))
-
-model = Sequential()
-model.add(Dense(21, activation='relu',input_dim = 10))
-model.add(Dropout(0.2))
-model.add(Dense(43, activation='relu'))
-model.add(Dropout(0.2))
-model.add(Dense(87, activation='relu'))
-model.add(Dropout(0.2))
-#model.add(Embedding(21,output_dim=125))
-#model.add(LSTM(21,input_shape=(125,10,1)))
-model.add(Dense(1, activation='sigmoid'))
+# model = relu_net(len(train_data[0]))
+# model = sigmoid_net(len(train_data[0]))
+model = tanh_net(len(train_data[0]))
 
 model.summary()
 
-# model.compile(loss=losses.mse,
-#               optimizer=SGD(),
-#               metrics=['accuracy'])
 model.compile(loss=losses.binary_crossentropy,
-              optimizer=optimizers.rmsprop,
+              optimizer='rmsprop',
               metrics=['accuracy'])
 
-history = model.fit(train_data,train_labels,
-                    epochs=1000,
+history = model.fit(train_data, train_labels,
+                    epochs=100,
                     verbose=1,
                     validation_data=(val_data, val_labels))
-score = model.evaluate(test_data,test_labels, verbose=0)
-print('Test loss:', score[0])
-print('Test accuracy:', score[1])
 
+# print(history.history.keys())
+# 'loss', 'val_acc', 'acc', 'val_loss'
+plt.plot(history.history['acc'])
+plt.plot(history.history['loss'])
+plt.legend(['acc', 'loss'])
+plt.show()
 
-
-# plt.plot(labels, 'o')
-# plt.plot(train_data)
-# plt.show()
+score, acc = model.evaluate(test_data, test_labels, verbose=0)
+print('Test loss:', score)
+print('Test accuracy:', acc)
