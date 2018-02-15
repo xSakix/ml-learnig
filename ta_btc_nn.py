@@ -106,8 +106,8 @@ def create_labels():
     # '1' - up, '0' - down
     labels = data.pct_change()
     labels = labels.iloc[2:]
-    labels[labels > 0.] = 1
-    labels[labels < 0.] = 0
+    labels[labels['BTC-USD'] > 0.1] = 1
+    labels[labels['BTC-USD'] <= 0.1] = 0
     labels = np.array(labels['BTC-USD'])
     return labels
 
@@ -116,17 +116,18 @@ def prepare_data_set(data):
     # prepare data
     # source : https://www.safaribooksonline.com/library/view/python-for-finance/9781491945360/ch01.html
     log_returns = np.log(data['BTC-USD'] / data['BTC-USD'].shift(1))
-    #log_returns = data['BTC-USD']
-    sma = pandas.rolling_mean(log_returns, window=30)*np.sqrt(30)
-    median = pandas.rolling_median(log_returns, window=30)*np.sqrt(30)
-    std = pandas.rolling_std(log_returns, window=30)*np.sqrt(30)
+    # log_returns = data['BTC-USD']
+    sma = pandas.rolling_mean(log_returns, window=30) * np.sqrt(30)
+    median = pandas.rolling_median(log_returns, window=30) * np.sqrt(30)
+    std = pandas.rolling_std(log_returns, window=30) * np.sqrt(30)
 
     # source https://www.quantinsti.com/blog/build-technical-indicators-in-python/
-    cci = (log_returns - pandas.rolling_mean(log_returns, 30)*np.sqrt(30)) / (0.015 * pandas.rolling_std(log_returns, 30)*np.sqrt(30))
-    ewma = pandas.ewma(log_returns, span=30)*np.sqrt(30)
-    roc = log_returns.diff(30)/ log_returns.shift(30)
-    upperbb = sma+(2*std)
-    lowerbb = sma-(2*std)
+    cci = (log_returns - pandas.rolling_mean(log_returns, 30) * np.sqrt(30)) / (
+            0.015 * pandas.rolling_std(log_returns, 30) * np.sqrt(30))
+    ewma = pandas.ewma(log_returns, span=30) * np.sqrt(30)
+    roc = log_returns.diff(30) / log_returns.shift(30)
+    upperbb = sma + (2 * std)
+    lowerbb = sma - (2 * std)
 
     f, p = plt.subplots(3, 3)
     p[0, 0].plot(log_returns)
@@ -176,13 +177,13 @@ data = load_data()
 labels = create_labels()
 train_data = prepare_data_set(data)
 data_set = train_data[:-1]
-train_data, train_labels = load_data_from_data_set(data_set, labels, int(2*len(data) / 3))
+train_data, train_labels = load_data_from_data_set(data_set, labels, int(2 * len(data) / 3))
 val_data, val_labels = load_data_from_data_set(data_set, labels, int(len(data) / 3))
 test_data, test_labels = load_data_from_data_set(data_set, labels, int(len(data) / 3))
 
 # model = relu_net(len(train_data[0]))
-# model = sigmoid_net(len(train_data[0]))
-model = tanh_net(len(train_data[0]))
+model = sigmoid_net(len(train_data[0]))
+# model = tanh_net(len(train_data[0]))
 
 model.summary()
 
@@ -191,7 +192,7 @@ model.compile(loss=losses.binary_crossentropy,
               metrics=['accuracy'])
 
 history = model.fit(train_data, train_labels,
-                    epochs=100,
+                    epochs=1000,
                     verbose=1,
                     validation_data=(val_data, val_labels))
 
