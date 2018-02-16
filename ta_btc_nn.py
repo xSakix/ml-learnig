@@ -7,6 +7,9 @@ import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
 from keras import losses
+import warnings
+
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 def relu_net(input_dim=10):
@@ -106,9 +109,15 @@ def create_labels():
     # '1' - up, '0' - down
     labels = data.pct_change()
     labels = labels.iloc[2:]
-    labels[labels['BTC-USD'] > 0.1] = 1
-    labels[labels['BTC-USD'] <= 0.1] = 0
+    labels[labels['BTC-USD'] > 0.] = 1
+    labels[labels['BTC-USD'] <= 0.] = 0
     labels = np.array(labels['BTC-USD'])
+
+    unique, counts = np.unique(labels, return_counts=True)
+    print(dict(zip(unique, counts)))
+    for u, c in zip(unique, counts):
+        print('probability of ' + str(u) + ' : ' + str(c / len(labels) * 100.) + ' %')
+
     return labels
 
 
@@ -167,10 +176,29 @@ def prepare_data_set(data):
     return np.array(train_data)
 
 
-def load_data_from_data_set(data_set, labels, size):
-    indexes = np.random.choice(range(len(data_set)), size=size)
+def load_data_from_data_set_unbalanced(data_set, labels, size):
+    index = np.random.choice(range(len(data_set)), size=size)
 
-    return data_set[indexes], labels[indexes]
+    return data_set[index], labels[index]
+
+def load_data_from_data_set(data_set, labels, size):
+    count_0 = 0
+    count_1 = 0
+    result_data = []
+    result_labels = []
+
+    while count_0 < size / 2 or count_1 < size / 2:
+        index = np.random.choice(range(len(data_set)), size=1)
+        if labels[index] == 0 and count_0 < size / 2:
+            result_data.append(data_set[index][0])
+            result_labels.append(labels[index])
+            count_0 += 1
+        if labels[index] == 1 and count_1 < size / 2:
+            result_data.append(data_set[index][0])
+            result_labels.append(labels[index])
+            count_1 += 1
+
+    return np.array(result_data), np.array(result_labels)
 
 
 data = load_data()
@@ -179,7 +207,25 @@ train_data = prepare_data_set(data)
 data_set = train_data[:-1]
 train_data, train_labels = load_data_from_data_set(data_set, labels, int(2 * len(data) / 3))
 val_data, val_labels = load_data_from_data_set(data_set, labels, int(len(data) / 3))
-test_data, test_labels = load_data_from_data_set(data_set, labels, int(len(data) / 3))
+test_data, test_labels = load_data_from_data_set_unbalanced(data_set, labels, int(len(data) / 3))
+
+print('-' * 100)
+unique, counts = np.unique(train_labels, return_counts=True)
+print(dict(zip(unique, counts)))
+for u, c in zip(unique, counts):
+    print('probability of ' + str(u) + ' : ' + str(c / len(train_labels) * 100.) + ' %')
+
+print('-' * 100)
+unique, counts = np.unique(val_labels, return_counts=True)
+print(dict(zip(unique, counts)))
+for u, c in zip(unique, counts):
+    print('probability of ' + str(u) + ' : ' + str(c / len(val_labels) * 100.) + ' %')
+
+print('-' * 100)
+unique, counts = np.unique(test_labels, return_counts=True)
+print(dict(zip(unique, counts)))
+for u, c in zip(unique, counts):
+    print('probability of ' + str(u) + ' : ' + str(c / len(test_labels) * 100.) + ' %')
 
 # model = relu_net(len(train_data[0]))
 model = sigmoid_net(len(train_data[0]))
